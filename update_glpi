@@ -1,0 +1,41 @@
+#!/bin/bash
+# Don't forget to download and add or edit the patches according to your configuration and the database
+# Paths to necessary directories and files
+
+GLPI_DIR="/var/www/html/glpi" # Path to your current GLPI installation
+GLPI_BACKUP_DIR="/var/www/html/glpi_backup_$(date +%Y-%m-%d_%H-%M-%S)" # Backup directory
+GLPI_NEW_ARCHIVE="/var/www/html/glpi-10.0.13.tgz" # Path to the new GLPI archive
+
+# MySQL credentials alias
+MYSQL_USER="your_mysql_user"
+MYSQL_PASSWORD="your_mysql_password"
+GLPI_DATABASE="your_glpi_database"
+
+# Backup of GLPI's MySQL database
+echo "Backing up GLPI's MySQL database..."
+mysqldump -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" "$GLPI_DATABASE" > "$GLPI_BACKUP_DIR/glpi_db_backup_$(date +%Y-%m-%d_%H-%M-%S).sql"
+echo "Database backup completed: $GLPI_BACKUP_DIR/glpi_db_backup_$(date +%Y-%m-%d_%H-%M-%S).sql"
+
+# Creating a backup of the current GLPI installation
+echo "Creating a backup of the current GLPI installation..."
+mkdir -p "$GLPI_BACKUP_DIR"
+cp -R "$GLPI_DIR"/* "$GLPI_BACKUP_DIR"
+echo "Backup completed: $GLPI_BACKUP_DIR"
+
+# Removing old files (except config files and data)
+echo "Removing old files..."
+find "$GLPI_DIR" -mindepth 1 ! -regex "^$GLPI_DIR/config\(/.*\)?" ! -regex "^$GLPI_DIR/files\(/.*\)?" ! -regex "^$GLPI_DIR/plugins\(/.*\)?" -delete
+
+# Extracting the new version of GLPI
+echo "Extracting the new version of GLPI..."
+tar -xzf "$GLPI_NEW_ARCHIVE" -C "$GLPI_DIR" --strip-components=1
+
+# Adjusting file permissions (adjust as needed)
+echo "Adjusting file permissions..."
+chown -R www-data:www-data "$GLPI_DIR"
+
+# Removing versions in the version folder of GLPI
+echo "Removing versions in the version folder of GLPI..."
+rm -rf "$GLPI_DIR/front/version"
+
+echo "File update completed. Please access the GLPI web interface to finalize the database update."
